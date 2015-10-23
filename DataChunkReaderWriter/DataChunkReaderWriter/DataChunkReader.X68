@@ -13,14 +13,35 @@ REGS_SUM_OF_SECTION REG     D0-D5
 *-------------------
 START   ORG     $1000
         
-*        lea     InputMessage, a1
-*        move.b  #CMD_PRINT_STRING, d0
-*        TRAP    #15
-*        
-*        move.b  #CMD_INPUT_NUMBER, d0
-*        TRAP    #15
-        
+        lea     InputMessage, a1
+        move.b  #CMD_PRINT_STRING_THEN_INPUT, d0
+        TRAP    #15
+                
         lea     Section1, a0
+        subi.l  #2, d1
+        bmi     CALCULATE_AVERAGE
+    GET_TO_SECTION:
+        move.l  (a0)+, d5
+        JSR     SWAP_LONG
+        move.b  d5, d4
+        andi.b  #1, d4
+        beq     EVEN_NUMBER_OF_BYTES
+        addi.l  #1, d5
+    EVEN_NUMBER_OF_BYTES:
+        add.l   d5, a0
+        
+        move.l  (a0)+, d5
+        JSR     SWAP_LONG
+        lsl.l   #1, d5
+        add.l   d5, a0
+        
+        move.l  (a0)+, d5
+        JSR     SWAP_LONG
+        lsl.l   #2, d5
+        add.l   d5, a0
+        dbra    d1, GET_TO_SECTION
+    
+    CALCULATE_AVERAGE:        
         JSR     SUM_OF_BYTES
         JSR     SUM_OF_SHORTS
         JSR     SUM_OF_LONGS
@@ -54,7 +75,16 @@ SUM_OF_BYTES:
         beq     RETURN_SUM_OF_BYTES
         add.l   #1, a0
         
-    RETURN_SUM_OF_BYTES:    
+    RETURN_SUM_OF_BYTES:
+        lea     SumOfBytes, a1
+        move.l  d7, d1
+        move.b  #CMD_PRINT_STRING_AND_NUMBER, d0
+        TRAP    #15
+        
+        lea     CRLF, a1
+        move.b  #CMD_PRINT_STRING, d0
+        TRAP    #15
+        
         movem.l (sp)+, REGS_SUM_OF_SECTION
         RTS
         
@@ -74,6 +104,15 @@ SUM_OF_SHORTS:
         add.w   d5, d7
         dbra    d0, ADD_SHORTS
         
+        lea     SumOfShorts, a1
+        move.l  d7, d1
+        move.b  #CMD_PRINT_STRING_AND_NUMBER, d0
+        TRAP    #15
+        
+        lea     CRLF, a1
+        move.b  #CMD_PRINT_STRING, d0
+        TRAP    #15
+        
         movem.l (sp)+, REGS_SUM_OF_SECTION
         RTS
 
@@ -92,6 +131,15 @@ SUM_OF_LONGS:
         JSR     SWAP_LONG
         add.l   d5, d7
         dbra    d0, ADD_LONGS
+
+        lea     SumOfLongs, a1
+        move.l  d7, d1
+        move.b  #CMD_PRINT_STRING_AND_NUMBER, d0
+        TRAP    #15
+        
+        lea     CRLF, a1
+        move.b  #CMD_PRINT_STRING, d0
+        TRAP    #15
         
         movem.l (sp)+, REGS_SUM_OF_SECTION
         RTS
@@ -114,7 +162,7 @@ SWAP_WORD:
         
 *-------------------
 * Subroutine: Swaps the bytes of the long word in d5
-* Uses      : d5, d6
+* Uses      : d5
 *-------------------
 SWAP_LONG:
         JSR     SWAP_WORD
@@ -131,6 +179,9 @@ SWAP_LONG:
 *-------------------
 CMD_INPUT_NUMBER    EQU     4
 CMD_PRINT_STRING    EQU     13
+CMD_PRINT_WO_CRLF   EQU     14
+CMD_PRINT_STRING_AND_NUMBER EQU 17
+CMD_PRINT_STRING_THEN_INPUT EQU 18
 
 *-------------------
 * 
@@ -140,6 +191,11 @@ LifeSaver           ds.l    0                    ; make memory boundary even
 DataFile            INCBIN  "datachunk.dat"
 NumberOfSections    EQU     DataFile
 Section1            EQU     (DataFile+4)
+
+SumOfBytes          dc.b    'Sum of bytes = ',0
+SumOfShorts         dc.b    'Sum of shorts = ',0
+SumOfLongs          dc.b    'Sum of longs = ',0
+CRLF                dc.b    '',0
 
         END     START
         
