@@ -1,0 +1,33 @@
+User chose 4 sections
+Section 1:
+16 66 
+2 bytes, sum = 82, average value 41.00
+5 85 
+2 shorts, sum = 90, average value 45.00
+84 62 
+2 longs, sum = 146, average value 73.00
+
+Section 2:
+76 28 9 
+3 bytes, sum = 113, average value 37.67
+21 20 
+2 shorts, sum = 41, average value 20.50
+66 36 97 
+3 longs, sum = 199, average value 66.33
+
+Section 3:
+47 18 19 
+3 bytes, sum = 84, average value 28.00
+2 67 38 
+3 shorts, sum = 107, average value 35.67
+54 50 76 
+3 longs, sum = 180, average value 60.00
+
+Section 4:
+39 40 54 
+3 bytes, sum = 133, average value 44.33
+59 93 
+2 shorts, sum = 152, average value 76.00
+7 51 
+2 longs, sum = 58, average value 29.00
+

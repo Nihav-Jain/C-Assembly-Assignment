@@ -34,26 +34,43 @@ int main()
 	}
 
 	time_t t;
-	printf("Time = %d\n", (unsigned)time(&t));
 	srand((unsigned)time(&t));
 
 	FILE* outputBinFile = fopen(OUTPUT_BIN_FILENAME, "wb");
 	fwrite(&N, sizeof(int), 1, outputBinFile);
 
-	int numData;
+	FILE* outputStatsFile = fopen(OUTPUT_STATS_FILENAME, "w");
+	fprintf(outputStatsFile, "User chose %d sections\n", N);
+
+	int numData, sum;
 	int dataSizeToWrite[] = { sizeof(char), sizeof(short int), sizeof(int) };
+	int dataValueRange[] = { BYTEVAL_MIN, BYTEVAL_MAX, SHORTVAL_MIN, SHORTVAL_MAX, LONGVAL_MIN, LONGVAL_MAX };
+	char* sizes[] = { "bytes", "shorts", "longs" };
+
 	for (i = 1; i <= N; i++)
 	{
-		printf("Section %d:\n", i);
+		fprintf(outputStatsFile, "Section %d:\n", i);
 		for (j = 0; j < 3; j++)
 		{
 			numData = dataNumberRanges[2 * j] + rand() % (dataNumberRanges[2 * j + 1] - dataNumberRanges[2 * j]);
 			fwrite(&numData, sizeof(int), 1, outputBinFile);
+			sum = 0;
 			for (k = 0; k < numData; k++)
 			{
-
+				int newData = dataValueRange[2 * j] + rand() % (dataValueRange[2 * j + 1] - dataValueRange[2 * j]);
+				fwrite(&newData, dataSizeToWrite[j], 1, outputBinFile);
+				fprintf(outputStatsFile, "%d ", newData);
+				sum += newData;
 			}
+			fprintf(outputStatsFile, "\n");
+			if (j == 0 && numData % 2 == 1)
+			{
+				char paddingByte = 0;
+				fwrite(&paddingByte, sizeof(char), 1, outputBinFile);
+			}
+			fprintf(outputStatsFile, "%d %s, sum = %d, average value %0.2f\n", numData, sizes[j], sum, (sum + 0.0) / numData);
 		}
+		fprintf(outputStatsFile, "\n");
 	}
 
 	fclose(dataRangesFile);
