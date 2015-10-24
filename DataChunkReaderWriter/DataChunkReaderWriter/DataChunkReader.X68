@@ -98,8 +98,10 @@ GET_NUMBER_OF_VALUES:
 SUM_OF_BYTES:
         subi.l  #1, d0                                  ; loop invariant        
         clr.l   d7
+        clr.l   d4
     ADD_BYTES:
-        add.b   (a0)+, d7                               ; calculating sum of bytes
+        move.b  (a0)+, d4                               ; calculating sum of bytes
+        add.l   d4, d7
         dbra    d0, ADD_BYTES
 
         move.b  d6, d0
@@ -117,10 +119,12 @@ SUM_OF_BYTES:
 SUM_OF_SHORTS:
         subi.l  #1, d0                                  ; loop invariant
         clr.l   d7 
+        clr.l   d4
     ADD_SHORTS:
         move.w  (a0)+, d5                               ; calculating sum of bytes
         JSR     SWAP_WORD
-        add.w   d5, d7
+        move.w  d5, d4
+        add.l   d5, d7
         dbra    d0, ADD_SHORTS
         
         RTS
@@ -164,9 +168,18 @@ CALCULATE_AVERAGE_AND_PRINT:
         divu    d6, d7                                  ; divide again by number of values
         
         lea     DecimalPoint, a1
+        move.b  #CMD_PRINT_WO_CRLF, d0
+        TRAP    #15
+        
         clr.l   d1
         move.w  d7, d1                                  ; print decimal point '.' and fractional part
-        move.b  #CMD_PRINT_STRING_AND_NUMBER, d0
+        cmpi.l  #10, d1
+        bge     PRINT_FRACTION
+        lea     Zero, a1 
+        move.b  #CMD_PRINT_WO_CRLF, d0
+        TRAP    #15 
+    PRINT_FRACTION:
+        move.b  #CMD_PRINT_NUMBER, d0
         TRAP    #15
         
         lea     CRLF, a1
@@ -213,6 +226,7 @@ CMD_PRINT_STRING    EQU     13
 CMD_PRINT_WO_CRLF   EQU     14
 CMD_PRINT_STRING_AND_NUMBER EQU 17
 CMD_PRINT_STRING_THEN_INPUT EQU 18
+CMD_PRINT_NUMBER    EQU     3
 
 *-------------------
 * 
@@ -228,6 +242,7 @@ SumOfShorts         dc.b    'Sum of shorts = ',0
 SumOfLongs          dc.b    'Sum of longs = ',0
 AverageValue        dc.b    ', average value = ',0
 DecimalPoint        dc.b    '.',0
+Zero                dc.b    '0',0
 CRLF                dc.b    '',0
 
         END     START

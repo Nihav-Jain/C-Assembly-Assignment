@@ -6,14 +6,14 @@
 #define OUTPUT_STATS_FILENAME "datastats.txt"
 #define INPUT_DATA_NUM_RANGE_FILENAME "data_num_ranges.txt"
 
-#define BYTEVAL_MIN 0
-#define BYTEVAL_MAX 100
+#define BYTEVAL_MIN 50
+#define BYTEVAL_MAX 150
 
-#define SHORTVAL_MIN 0
-#define SHORTVAL_MAX 100
+#define SHORTVAL_MIN 1000
+#define SHORTVAL_MAX 2000
 
-#define LONGVAL_MIN 0
-#define LONGVAL_MAX 100
+#define LONGVAL_MIN 3000
+#define LONGVAL_MAX 5000
 
 int main()
 {
@@ -44,7 +44,7 @@ int main()
 
 	int numData, sum;
 	int dataSizeToWrite[] = { sizeof(char), sizeof(short int), sizeof(int) };
-	int dataValueRange[] = { BYTEVAL_MIN, BYTEVAL_MAX, SHORTVAL_MIN, SHORTVAL_MAX, LONGVAL_MIN, LONGVAL_MAX };
+	int dataValueRange[] = { BYTEVAL_MIN+1, BYTEVAL_MAX-1, SHORTVAL_MIN+1, SHORTVAL_MAX-1, LONGVAL_MIN+1, LONGVAL_MAX-1 };
 	char* sizes[] = { "bytes", "shorts", "longs" };
 
 	for (i = 1; i <= N; i++)
@@ -59,10 +59,9 @@ int main()
 			{
 				int newData = dataValueRange[2 * j] + rand() % (dataValueRange[2 * j + 1] - dataValueRange[2 * j]);
 				fwrite(&newData, dataSizeToWrite[j], 1, outputBinFile);
-				fprintf(outputStatsFile, "%d ", newData);
+				//fprintf(outputStatsFile, "%d ", newData);
 				sum += newData;
 			}
-			fprintf(outputStatsFile, "\n");
 			if (j == 0 && numData % 2 == 1)
 			{
 				char paddingByte = 0;
