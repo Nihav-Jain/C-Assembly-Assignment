@@ -15,6 +15,9 @@
 #define LONGVAL_MIN 3000
 #define LONGVAL_MAX 5000
 
+int swapShort(int shortVal);
+int swapLong(int longVal);
+
 int main()
 {
 	int N;
@@ -29,17 +32,17 @@ int main()
 	for (int i = 0; i < 6; i += 2)
 	{
 		fscanf_s(dataRangesFile, "%d %d", &dataNumberRanges[i], &dataNumberRanges[i + 1]);
-		dataNumberRanges[i]++;				// incrementing to bring value in closed range (>= instead of >)
-		dataNumberRanges[i + 1]--;			// decrementing to being value in closed range (<= instead of <)
+		//dataNumberRanges[i]++;				// incrementing to bring value in closed range (>= instead of >)
+		dataNumberRanges[i + 1]++;			// incrementing to bring value in open range (< instead of <=)
 	}
 
 	time_t t;
 	srand((unsigned)time(&t));
 
 	FILE* outputBinFile = fopen(OUTPUT_BIN_FILENAME, "wb");
-	fwrite(&N, sizeof(int), 1, outputBinFile);
+	//fwrite(&N, sizeof(int), 1, outputBinFile);
 
-	FILE* outputStatsFile = fopen(OUTPUT_STATS_FILENAME, "w");
+	FILE* outputStatsFile = stdout; //fopen(OUTPUT_STATS_FILENAME, "w");
 	fprintf(outputStatsFile, "User chose %d sections\n", N);
 
 	int numData, sum;
@@ -53,21 +56,21 @@ int main()
 		for (j = 0; j < 3; j++)
 		{
 			numData = dataNumberRanges[2 * j] + rand() % (dataNumberRanges[2 * j + 1] - dataNumberRanges[2 * j]);
-			fwrite(&numData, sizeof(int), 1, outputBinFile);
+			//fwrite(&numData, sizeof(int), 1, outputBinFile);
 			sum = 0;
 			for (k = 0; k < numData; k++)
 			{
 				int newData = dataValueRange[2 * j] + rand() % (dataValueRange[2 * j + 1] - dataValueRange[2 * j]);
-				fwrite(&newData, dataSizeToWrite[j], 1, outputBinFile);
-				//fprintf(outputStatsFile, "%d ", newData);
+				//fwrite(&newData, dataSizeToWrite[j], 1, outputBinFile);
+				fprintf(outputStatsFile, "%d ", newData);
 				sum += newData;
 			}
 			if (j == 0 && numData % 2 == 1)
 			{
 				char paddingByte = 0;
-				fwrite(&paddingByte, sizeof(char), 1, outputBinFile);
+				//fwrite(&paddingByte, sizeof(char), 1, outputBinFile);
 			}
-			fprintf(outputStatsFile, "%d %s, sum = %d, average value %0.2f\n", numData, sizes[j], sum, (sum + 0.0) / numData);
+			fprintf(outputStatsFile, "\n%d %s, sum = %d, average value %0.2f\n", numData, sizes[j], sum, (sum + 0.0) / numData);
 		}
 		fprintf(outputStatsFile, "\n");
 	}
@@ -77,4 +80,29 @@ int main()
 
 	return 0;
 
+}
+
+int swapShort(int shortVal)
+{
+	int copy = shortVal;
+	copy = copy & 0x00FF;
+	copy = copy << 8;
+
+	shortVal = shortVal & 0xFF00;
+	shortVal = shortVal >> 8;
+	shortVal = shortVal | copy;
+	return shortVal;
+}
+
+int swapLong(int longVal)
+{
+	int lowerWord = longVal & 0xFFFF;
+	lowerWord = swapShort(lowerWord);
+	lowerWord = lowerWord << 16;
+
+	int upperWord = longVal & 0xFFFF0000;
+	upperWord = upperWord >> 16;
+	upperWord = swapShort(upperWord);
+
+	return lowerWord | upperWord;
 }
