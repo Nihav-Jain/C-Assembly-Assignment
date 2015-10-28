@@ -30,7 +30,7 @@ START   ORG     $1000
                                                         ; otherwise move the pointer to the head of the section
     GET_TO_SECTION:
         move.l  (a0)+, d5                               ; read the number of byte sized data in this section
-        JSR     SWAP_LONG
+        ;JSR     SWAP_LONG
         move.b  d5, d4
         andi.b  #1, d4
         beq     EVEN_NUMBER_OF_BYTES                    ; if the number of bytes is odd, there is a padding byte in the end to make the address for the later data on an even boundary
@@ -39,12 +39,12 @@ START   ORG     $1000
         add.l   d5, a0                                  ; move file pointer to chunk of words
         
         move.l  (a0)+, d5                               ; read the number of word sized data in this section
-        JSR     SWAP_LONG
+        ;JSR     SWAP_LONG
         lsl.l   #1, d5                                  ; word = 2 bytes, so distance to move = 2xNumberOfWords
         add.l   d5, a0                                  ; move file pointer to chunk of longs
         
         move.l  (a0)+, d5                               ; read the number of long sized data in this section
-        JSR     SWAP_LONG
+        ;JSR     SWAP_LONG
         lsl.l   #2, d5                                  ; long = 4 bytes, so distance to move = 4xNumberOfLongs
         add.l   d5, a0                                  ; move file pointer to start of next section
         dbra    d1, GET_TO_SECTION
@@ -86,7 +86,7 @@ COMPUTE_AND_PRINT_AVERAGE:
 *-------------------
 GET_NUMBER_OF_VALUES:
         move.l  (a0)+, d5
-        JSR     SWAP_LONG        
+        ;JSR     SWAP_LONG        
         move.l  d5, d0
         move.l  d5, d6
         RTS
@@ -122,7 +122,7 @@ SUM_OF_SHORTS:
         clr.l   d4
     ADD_SHORTS:
         move.w  (a0)+, d5                               ; calculating sum of bytes
-        JSR     SWAP_WORD
+        ;JSR     SWAP_WORD
         move.w  d5, d4
         add.l   d5, d7
         dbra    d0, ADD_SHORTS
@@ -137,7 +137,7 @@ SUM_OF_LONGS:
         clr.l   d7 
     ADD_LONGS:
         move.l  (a0)+, d5                               ; calculating sum of longs
-        JSR     SWAP_LONG
+        ;JSR     SWAP_LONG
         add.l   d5, d7
         dbra    d0, ADD_LONGS
         RTS
@@ -249,6 +249,7 @@ CRLF                dc.b    '',0
         
 
         
+
 
 
 
