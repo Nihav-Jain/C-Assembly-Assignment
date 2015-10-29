@@ -19,38 +19,43 @@ REGS_SUM_OF_SECTION REG     D0-D5
 * MAIN
 *-------------------
 START   ORG     $1000
+
+*        move.b  #CMD_SET_OUTPUT_RES, d0
+*        move.l  #OUTPUT_RES, d1
+*        TRAP    #15
         
-        lea     InputMessage, a1
-        move.b  #CMD_PRINT_STRING_THEN_INPUT, d0        ; input goes into d1
-        TRAP    #15
-                
-        lea     Section1, a0
-        subi.l  #2, d1
-        bmi     CALCULATE_AVERAGE                       ; if input was section 1, go directly to calculating average
-                                                        ; otherwise move the pointer to the head of the section
-    GET_TO_SECTION:
-        move.l  (a0)+, d5                               ; read the number of byte sized data in this section
-        ;JSR     SWAP_LONG
-        move.b  d5, d4
-        andi.b  #1, d4
-        beq     EVEN_NUMBER_OF_BYTES                    ; if the number of bytes is odd, there is a padding byte in the end to make the address for the later data on an even boundary
-        addi.l  #1, d5
-    EVEN_NUMBER_OF_BYTES:
-        add.l   d5, a0                                  ; move file pointer to chunk of words
+        lea     DataFile, a0
+        lea     TestFile, a2
         
-        move.l  (a0)+, d5                               ; read the number of word sized data in this section
-        ;JSR     SWAP_LONG
-        lsl.l   #1, d5                                  ; word = 2 bytes, so distance to move = 2xNumberOfWords
-        add.l   d5, a0                                  ; move file pointer to chunk of longs
-        
-        move.l  (a0)+, d5                               ; read the number of long sized data in this section
-        ;JSR     SWAP_LONG
-        lsl.l   #2, d5                                  ; long = 4 bytes, so distance to move = 4xNumberOfLongs
-        add.l   d5, a0                                  ; move file pointer to start of next section
-        dbra    d1, GET_TO_SECTION
-    
+        move.l  (a0), d5
+        add.l   #4, a0
+        move.l  #1, d4
     CALCULATE_AVERAGE:
+        move.l  #$00FFFFFF, d1
+        move.b  #CMD_FONT_COLOR, d0
+        TRAP    #15
+        
+        lea     SectionString, a1
+        move.l  d4, d1
+        move.b  #CMD_PRINT_STRING_AND_NUMBER, d0
+        TRAP    #15
+        
+        lea     CRLF, a1
+        move.b  #CMD_PRINT_STRING, d0
+        TRAP    #15
+        
         JSR     COMPUTE_AND_PRINT_AVERAGE
+        lea     CRLF, a1
+        move.b  #CMD_PRINT_STRING, d0
+        TRAP    #15
+
+        move.l  #DELAY, d1
+        move.b  #CMD_CPU_DELAY, d0
+        TRAP    #15
+
+        addi.l  #1, d4
+        cmp.l   d5, d4
+        ble     CALCULATE_AVERAGE
         
         move.b  $9,d0
         TRAP    #15
@@ -64,36 +69,18 @@ COMPUTE_AND_PRINT_AVERAGE:
         movem.l REGS_SUM_OF_SECTION, -(sp)
         
         JSR     GET_NUMBER_OF_VALUES        
-
-        lea     NumberOfBytes, a1
-        move.l  d6, d1
-        move.b  #CMD_PRINT_STRING_AND_NUMBER, d0
-        TRAP    #15
-        move.l  d6, d0
-        
         JSR     SUM_OF_BYTES
+        lea     SumOfBytes, a1
         JSR     CALCULATE_AVERAGE_AND_PRINT
 
         JSR     GET_NUMBER_OF_VALUES        
-
-        lea     NumberOfShorts, a1
-        move.l  d6, d1
-        move.b  #CMD_PRINT_STRING_AND_NUMBER, d0
-        TRAP    #15
-        move.l  d6, d0
-
         JSR     SUM_OF_SHORTS
+        lea     SumOfShorts, a1
         JSR     CALCULATE_AVERAGE_AND_PRINT
 
         JSR     GET_NUMBER_OF_VALUES        
-
-        lea     NumberOfLongs, a1
-        move.l  d6, d1
-        move.b  #CMD_PRINT_STRING_AND_NUMBER, d0
-        TRAP    #15
-        move.l  d6, d0
-
         JSR     SUM_OF_LONGS
+        lea     SumOfLongs, a1
         JSR     CALCULATE_AVERAGE_AND_PRINT
         
         movem.l (sp)+, REGS_SUM_OF_SECTION
@@ -105,6 +92,7 @@ COMPUTE_AND_PRINT_AVERAGE:
 GET_NUMBER_OF_VALUES:
         move.l  (a0)+, d5
         ;JSR     SWAP_LONG        
+        move.l  d5, d0
         move.l  d5, d6
         RTS
         
@@ -163,11 +151,16 @@ SUM_OF_LONGS:
 * Calculates the average and prints the result
 * d7 = sum of the values, d6 = number of values
 *-------------------
-CALCULATE_AVERAGE_AND_PRINT:        
+CALCULATE_AVERAGE_AND_PRINT:
+        move.l  d7, d1                                  ; printing sum of numbers
+        move.b  #CMD_PRINT_STRING_AND_NUMBER, d0
+        *TRAP    #15
+        
         divu    d6, d7                                  ; divide sum by number of values to get integer part of the average
         clr.l   d3
         move.w  d7, d3
-
+        
+    CALC_FRACTION:        
         move.l  d6, d5                                  ; make a copy of the denominator
         lsr.l   #1, d5                                  ; divide by 2
         swap    d7
@@ -175,34 +168,76 @@ CALCULATE_AVERAGE_AND_PRINT:
         mulu    #100, d7                                ; multiply by 100 to get accuracy up to a hundredths
         add.l   d5, d7                                  ; add half-of-denominator to remainder for rounding up
         divu    d6, d7                                  ; divide again by number of values
-
+        
         cmpi.w  #100, d7
-        bne     PRINT_STUFF
+        bne     CHECK_INTEGER
         addi.l  #1, d3
         move.l  #0, d7
         
-    PRINT_STUFF:
+    CHECK_INTEGER:
         clr.l   d4
         move.w  d7, d4
+        move.l  (a2)+, d5
+        JSR     SWAP_LONG
+        cmp.l   d5, d3
+        beq     INTEGER_CORRECT
         
-        lea     AverageValue, a1
-        clr.l   d1
-        move.w  d3, d1                                  ; print "average value" string and the integer part of the average
-        move.b  #CMD_PRINT_STRING_AND_NUMBER, d0
+        move.l  #$000000FF, d1
+        move.b  #CMD_FONT_COLOR, d0
+        TRAP    #15
+        
+        lea     FAIL, a1
+        move.b  #CMD_PRINT_WO_CRLF, d0
+        TRAP    #15
+        bra     CHECK_DECIMAL_PART 
+    
+    INTEGER_CORRECT:
+        move.l  #$0000FF00, d1
+        move.b  #CMD_FONT_COLOR, d0
+        TRAP    #15
+        
+        lea     PASS, a1
+        move.b  #CMD_PRINT_WO_CRLF, d0
+        TRAP    #15
+    
+    CHECK_DECIMAL_PART:
+        move.w  (a2)+, d5
+        JSR     SWAP_WORD
+        cmp.l   d5, d4
+        beq     DECIMAL_CORRECT
+        
+        move.l  #$000000FF, d1
+        move.b  #CMD_FONT_COLOR, d0
+        TRAP    #15
+        lea     FAIL, a1
+        move.b  #CMD_PRINT_WO_CRLF, d0
+        TRAP    #15
+        bra     PRINT_STUFF
+        
+    DECIMAL_CORRECT:
+        move.l  #$0000FF00, d1
+        move.b  #CMD_FONT_COLOR, d0
+        TRAP    #15
+        lea     PASS, a1
+        move.b  #CMD_PRINT_WO_CRLF, d0
+        TRAP    #15
+        
+    PRINT_STUFF:        
+        move.l  d3, d1
+        move.b  #CMD_PRINT_NUMBER, d0
         TRAP    #15
         
         lea     DecimalPoint, a1
         move.b  #CMD_PRINT_WO_CRLF, d0
         TRAP    #15
         
-        clr.l   d1
-        move.w  d4, d1                                  ; print decimal point '.' and fractional part
-        cmpi.l  #10, d1
-        bge     PRINT_FRACTION
+        cmpi.l  #10, d4
+        bge     PRINT_FRAC
         lea     Zero, a1
         move.b  #CMD_PRINT_WO_CRLF, d0
         TRAP    #15
-    PRINT_FRACTION:
+    PRINT_FRAC:
+        move.l  d4, d1
         move.b  #CMD_PRINT_NUMBER, d0
         TRAP    #15
         
@@ -251,6 +286,9 @@ CMD_PRINT_WO_CRLF   EQU     14
 CMD_PRINT_STRING_AND_NUMBER EQU 17
 CMD_PRINT_STRING_THEN_INPUT EQU 18
 CMD_PRINT_NUMBER    EQU     3
+CMD_SET_OUTPUT_RES  EQU     33
+CMD_FONT_COLOR      EQU     21
+CMD_CPU_DELAY       EQU     23
 
 *-------------------
 * 
@@ -260,14 +298,20 @@ LifeSaver           ds.l    0                    ; make memory boundary even
 DataFile            INCBIN  "datachunk.dat"
 NumberOfSections    EQU     DataFile
 Section1            EQU     (DataFile+4)
+TestFile            INCBIN  "datachunkresults.dat"
 
-NumberOfBytes       dc.b    'Number of bytes = ',0
-NumberOfShorts      dc.b    'Number of shorts = ',0
-NumberOfLongs       dc.b    'Number of longs = ',0
+SumOfBytes          dc.b    'Sum of bytes = ',0
+SumOfShorts         dc.b    'Sum of shorts = ',0
+SumOfLongs          dc.b    'Sum of longs = ',0
 AverageValue        dc.b    ', average value = ',0
+SectionString       dc.b    'Section ',0
 DecimalPoint        dc.b    '.',0
 Zero                dc.b    '0',0
 CRLF                dc.b    '',0
+OUTPUT_RES          EQU     $028003E8
+PASS                dc.b    'PASS ',0
+FAIL                dc.b    'FAIL ',0
+DELAY               EQU     50
 
         END     START
         
@@ -284,7 +328,8 @@ CRLF                dc.b    '',0
 
 
 
+
 *~Font name~Courier New~
-*~Font size~12~
+*~Font size~14~
 *~Tab type~1~
 *~Tab size~4~

@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
+#include <math.h>
 
 #define OUTPUT_BIN_FILENAME "datachunk.dat"
 #define OUTPUT_STATS_FILENAME "datastats.txt"
 #define INPUT_DATA_NUM_RANGE_FILENAME "data_num_ranges.txt"
+#define OUTPUT_BIN_RESULTS "datachunkresults.dat"
+#define	OUTPUT_RESULTS_FILENAME "results.txt"
 
 #define BYTEVAL_MIN 50
 #define BYTEVAL_MAX 150
@@ -46,6 +49,9 @@ int main()
 	FILE* outputStatsFile = fopen(OUTPUT_STATS_FILENAME, "w");
 	fprintf(outputStatsFile, "User chose %d sections\n", N);
 
+	FILE* outputBinResultsFile = fopen(OUTPUT_BIN_RESULTS, "wb");
+	FILE* outputResultsFile = fopen(OUTPUT_RESULTS_FILENAME, "w");
+
 	int numData, sum;
 	int dataSizeToWrite[] = { sizeof(char), sizeof(short int), sizeof(int) };
 	int dataValueRange[] = { BYTEVAL_MIN+1, BYTEVAL_MAX-1, SHORTVAL_MIN+1, SHORTVAL_MAX-1, LONGVAL_MIN+1, LONGVAL_MAX-1 };
@@ -54,6 +60,7 @@ int main()
 	for (i = 1; i <= N; i++)
 	{
 		fprintf(outputStatsFile, "Section %d:\n", i);
+		fprintf(outputResultsFile, "Section %d:\n", i);
 		for (j = 0; j < 3; j++)
 		{
 			numData = dataNumberRanges[2 * j] + rand() % (dataNumberRanges[2 * j + 1] - dataNumberRanges[2 * j]);
@@ -83,12 +90,23 @@ int main()
 				fwrite(&paddingByte, sizeof(char), 1, outputBinFile);
 			}
 			fprintf(outputStatsFile, "%d %s, sum = %d, average value %0.2f\n", numData, sizes[j], sum, (sum + 0.0) / numData);
+
+			float average = (sum + 0.0) / numData;
+			int avg = roundf(average * 100);
+			int decimalPart = avg % 100;
+			avg /= 100;
+			fwrite(&avg, sizeof(int), 1, outputBinResultsFile);
+			fwrite(&decimalPart, sizeof(short), 1, outputBinResultsFile);
+			fprintf(outputResultsFile, "%d %d\n", avg, decimalPart);
 		}
 		fprintf(outputStatsFile, "\n");
+		fprintf(outputResultsFile, "\n");
 	}
 
 	fclose(dataRangesFile);
 	fclose(outputBinFile);
+	fclose(outputBinResultsFile);
+	fclose(outputResultsFile);
 
 	return 0;
 
