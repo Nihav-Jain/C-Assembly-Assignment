@@ -3,11 +3,11 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define OUTPUT_BIN_FILENAME "datachunk.dat"
-#define OUTPUT_STATS_FILENAME "datastats.txt"
-#define INPUT_DATA_NUM_RANGE_FILENAME "data_num_ranges.txt"
-#define OUTPUT_BIN_RESULTS "datachunkresults.dat"
-#define	OUTPUT_RESULTS_FILENAME "results.txt"
+#define OUTPUT_BIN_FILENAME "../datachunk.dat"
+#define OUTPUT_STATS_FILENAME "../datastats.txt"
+#define INPUT_DATA_NUM_RANGE_FILENAME "../data_num_ranges.txt"
+#define OUTPUT_BIN_RESULTS "../datachunkresults.dat"
+#define	OUTPUT_RESULTS_FILENAME "../results.txt"
 
 #define BYTEVAL_MIN 50
 #define BYTEVAL_MAX 150
